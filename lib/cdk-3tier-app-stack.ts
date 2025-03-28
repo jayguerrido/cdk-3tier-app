@@ -29,26 +29,27 @@ export class Cdk3TierAppStack extends Stack {
     securityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(80), 'Allow HTTP');
     securityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(22), 'Allow SSH');
 
-    // User Data to install Nginx
+    // User Data to install Nginx and add a basic index.html
     const userData = ec2.UserData.forLinux();
     userData.addCommands(
       'sudo yum update -y',
       'sudo amazon-linux-extras install nginx1 -y',
       'sudo systemctl enable nginx',
-      'sudo systemctl start nginx'
+      'sudo systemctl start nginx',
+      'echo "<h1>Hello from CDK EC2</h1>" | sudo tee /usr/share/nginx/html/index.html'
     );
 
     // Create EC2 instance
     new ec2.Instance(this, 'WebServer', {
       vpc,
       instanceType: ec2.InstanceType.of(ec2.InstanceClass.T2, ec2.InstanceSize.MICRO),
-      machineImage: ec2.MachineImage.latestAmazonLinux(),
+      machineImage: ec2.MachineImage.latestAmazonLinux2(), // ✅ Updated to avoid deprecation
       vpcSubnets: {
-        subnetType: ec2.SubnetType.PUBLIC, // ⬅️ Ensure it's in a public subnet
+        subnetType: ec2.SubnetType.PUBLIC,
       },
+      associatePublicIpAddress: true,
       securityGroup,
       userData,
-      associatePublicIpAddress: true, // ⬅️ This ensures a public IP
     });
   }
 }
