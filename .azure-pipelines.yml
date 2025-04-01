@@ -24,10 +24,11 @@ steps:
     inputs:
       awsCredentials: 'aws-dev'  # Name of your AWS Service Connection
       regionName: 'us-east-1'  # Replace with your desired AWS region
-      command: 'sts'
-      arguments: 'get-caller-identity'  # This command verifies AWS credentials
+      awsCommand: 'sts'  # Specify the AWS command (e.g., sts)
+      awsSubCommand: 'get-caller-identity'  # Specify the subcommand to execute (e.g., get-caller-identity)
     displayName: 'Test AWS CLI Authentication'
 
   - script: |
       cdk deploy --require-approval never
     displayName: 'Deploy CDK stack'
+
