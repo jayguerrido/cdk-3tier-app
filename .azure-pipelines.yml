@@ -20,8 +20,14 @@ steps:
       npm run build
     displayName: 'Install dependencies and build CDK app'
 
-  - script: cdk deploy --require-approval never
-    env:
-      AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
-      AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+  - task: AWSCLI@1
+    inputs:
+      awsCredentials: 'aws-dev'  # Name of your AWS Service Connection
+      regionName: 'us-east-1'  # Replace with your desired AWS region
+      command: 'sts'
+      arguments: 'get-caller-identity'
+    displayName: 'Test AWS CLI Authentication'
+
+  - script: |
+      cdk deploy --require-approval never
     displayName: 'Deploy CDK stack'
