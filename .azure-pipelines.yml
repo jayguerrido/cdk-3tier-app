@@ -24,7 +24,8 @@ steps:
     inputs:
       awsCredentials: 'aws-dev'  # Name of your AWS Service Connection
       regionName: 'us-east-1'  # Replace with your desired AWS region
-      awsCommand: 'sts get-caller-identity'  # This will verify AWS credentials
+      command: 'sts'
+      arguments: 'get-caller-identity'  # This command verifies AWS credentials
     displayName: 'Test AWS CLI Authentication'
 
   - script: |
