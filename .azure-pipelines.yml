@@ -24,34 +24,19 @@ steps:
       npm run build
     displayName: 'Install dependencies and build CDK app'
 
-  # ✅ Use the AWSCLI task to set up the environment by calling a dummy AWS command
+  # ✅ Use this task to verify service connection AND run cdk deploy inside it
   - task: AWSCLI@1
-    name: ConfigureAWS
     inputs:
-      awsCredentials: 'aws-dev'         # Your service connection name
+      awsCredentials: 'aws-dev'  # Your service connection name
       regionName: '$(AWS_REGION)'
-      awsCommand: 'sts'
-      awsSubCommand: 'get-caller-identity'
-    displayName: 'Verify AWS Credentials'
+      awsCommand: 'custom'
+      awsSubCommand: |
+        npm install -g aws-cdk
+        npm install
+        npm run build
+        cdk deploy --require-approval never
+    displayName: 'Deploy CDK stack using AWS service connection'
 
-  # ✅ Re-configure AWS CLI manually using the available env vars
-  - bash: |
-      mkdir -p ~/.aws
-      echo "[default]" > ~/.aws/credentials
-      echo "aws_access_key_id=$AWS_ACCESS_KEY_ID" >> ~/.aws/credentials
-      echo "aws_secret_access_key=$AWS_SECRET_ACCESS_KEY" >> ~/.aws/credentials
-      echo "aws_session_token=$AWS_SESSION_TOKEN" >> ~/.aws/credentials
-      echo "[default]" > ~/.aws/config
-      echo "region=$AWS_REGION" >> ~/.aws/config
-
-      cdk deploy --require-approval never
-    displayName: 'Deploy CDK Stack using credentials'
-    env:
-      AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
-      AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
-      AWS_SESSION_TOKEN: $(AWS_SESSION_TOKEN)
-      AWS_REGION: $(AWS_REGION)
-      AWS_ACCOUNT_ID: $(AWS_ACCOUNT_ID)
 
 
 
