@@ -1,3 +1,3 @@
 tasks:
-  - init: npm install
-    command: bash
+  - name: Install CDK
+    init: npm install -g aws-cdk
