@@ -7,8 +7,8 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  AWS_REGION: 'us-east-1'                # ✅ Change if you're using a different region
-  AWS_ACCOUNT_ID: '904233121797'         # ✅ Replace with your actual AWS account ID
+  AWS_REGION: 'us-east-1'
+  AWS_ACCOUNT_ID: '904233121797'  # <-- Replace with your real account ID
 
 steps:
   - checkout: self
@@ -24,36 +24,25 @@ steps:
       npm run build
     displayName: 'Install dependencies and build CDK app'
 
-  # ✅ Use the service connection to verify it works — and prep env vars
+  # ✅ Optional: Just verify the service connection works
   - task: AWSCLI@1
-    name: exportCreds
     inputs:
-      awsCredentials: 'aws-dev'           # ✅ Name of your AWS service connection in ADO
+      awsCredentials: 'aws-dev'
       regionName: '$(AWS_REGION)'
       awsCommand: 'sts'
       awsSubCommand: 'get-caller-identity'
-    displayName: 'Verify AWS service connection'
+    displayName: 'Verify AWS credentials'
 
-  # ✅ Manually promote the credentials for CDK to use
-  - bash: |
-      echo "##vso[task.setvariable variable=AWS_ACCESS_KEY_ID;issecret=true]$AWS_ACCESS_KEY_ID"
-      echo "##vso[task.setvariable variable=AWS_SECRET_ACCESS_KEY;issecret=true]$AWS_SECRET_ACCESS_KEY"
-      echo "##vso[task.setvariable variable=AWS_SESSION_TOKEN;issecret=true]$AWS_SESSION_TOKEN"
-    env:
-      AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
-      AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
-      AWS_SESSION_TOKEN: $(AWS_SESSION_TOKEN)
-    displayName: 'Export AWS credentials to environment'
-
-  - script: |
-      cdk deploy --require-approval never
+  # ✅ Deploy CDK app using same service connection (no need for exported vars)
+  - task: AWSCLI@1
+    inputs:
+      awsCredentials: 'aws-dev'
+      regionName: '$(AWS_REGION)'
+      awsCommand: 'shell'
+      awsSubCommand: |
+        cdk deploy --require-approval never
     displayName: 'Deploy CDK stack'
-    env:
-      AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
-      AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
-      AWS_SESSION_TOKEN: $(AWS_SESSION_TOKEN)
-      AWS_REGION: $(AWS_REGION)
-      AWS_ACCOUNT_ID: $(AWS_ACCOUNT_ID)
+
 
 
 
