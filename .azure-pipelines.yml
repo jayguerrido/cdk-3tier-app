@@ -8,7 +8,7 @@ pool:
 
 variables:
   AWS_REGION: 'us-east-1'
-  AWS_ACCOUNT_ID: '904233121797'  # <-- Replace with your real account ID
+  AWS_ACCOUNT_ID: '904233121797'  # Replace with your actual AWS account ID
 
 steps:
   - checkout: self
@@ -24,23 +24,25 @@ steps:
       npm run build
     displayName: 'Install dependencies and build CDK app'
 
-  # ✅ Optional: Just verify the service connection works
+  # ✅ This task makes AWS credentials available to all later steps
   - task: AWSCLI@1
+    name: SetupAWS
     inputs:
       awsCredentials: 'aws-dev'
       regionName: '$(AWS_REGION)'
       awsCommand: 'sts'
       awsSubCommand: 'get-caller-identity'
-    displayName: 'Verify AWS credentials'
+    displayName: 'Verify AWS service connection'
 
-  # ✅ Deploy CDK app using same service connection (no need for exported vars)
-  - task: AWSCLI@1
-    inputs:
-      awsCredentials: 'aws-dev'
-      regionName: '$(AWS_REGION)'
-      awsCommand: 'shell'
-      awsSubCommand: |
-        cdk deploy --require-approval never
+  # ✅ Use Bash to deploy with credentials from service connection
+  - bash: |
+      cdk deploy --require-approval never
+    env:
+      AWS_ACCESS_KEY_ID: $(SetupAWS.AWS_ACCESS_KEY_ID)
+      AWS_SECRET_ACCESS_KEY: $(SetupAWS.AWS_SECRET_ACCESS_KEY)
+      AWS_SESSION_TOKEN: $(SetupAWS.AWS_SESSION_TOKEN)
+      AWS_REGION: $(AWS_REGION)
+      AWS_ACCOUNT_ID: $(AWS_ACCOUNT_ID)
     displayName: 'Deploy CDK stack'
 
 
