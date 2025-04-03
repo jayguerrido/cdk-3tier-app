@@ -8,7 +8,7 @@ pool:
 
 variables:
   AWS_REGION: 'us-east-1'
-  AWS_ACCOUNT_ID: '904233121797'  # Replace with your actual AWS account ID
+  AWS_ACCOUNT_ID: '904233121797'  # Replace with your real account ID
 
 steps:
   - checkout: self
@@ -24,18 +24,30 @@ steps:
       npm run build
     displayName: 'Install dependencies and build CDK app'
 
-  # ✅ Use this task to verify service connection AND run cdk deploy inside it
+  # ✅ Verifies and injects AWS credentials using your service connection
   - task: AWSCLI@1
+    name: InjectCreds
     inputs:
-      awsCredentials: 'aws-dev'  # Your service connection name
+      awsCredentials: 'aws-dev'  # your service connection
       regionName: '$(AWS_REGION)'
-      awsCommand: 'custom'
-      awsSubCommand: |
-        npm install -g aws-cdk
-        npm install
-        npm run build
-        cdk deploy --require-approval never
-    displayName: 'Deploy CDK stack using AWS service connection'
+      awsCommand: 'sts'
+      awsSubCommand: 'get-caller-identity'
+    displayName: 'Verify AWS credentials'
+
+  # ✅ Deploys CDK app using credentials injected by AWSCLI@1
+  - bash: |
+      npm install -g aws-cdk
+      npm install
+      npm run build
+      cdk deploy --require-approval never
+    displayName: 'Deploy CDK stack'
+    env:
+      AWS_ACCESS_KEY_ID: $(InjectCreds.AWS_ACCESS_KEY_ID)
+      AWS_SECRET_ACCESS_KEY: $(InjectCreds.AWS_SECRET_ACCESS_KEY)
+      AWS_SESSION_TOKEN: $(InjectCreds.AWS_SESSION_TOKEN)
+      AWS_REGION: $(AWS_REGION)
+      AWS_ACCOUNT_ID: $(AWS_ACCOUNT_ID)
+
 
 
 
