@@ -8,7 +8,7 @@ pool:
 
 variables:
   AWS_REGION: 'us-east-1'
-  AWS_ACCOUNT_ID: '9042331217972'  # <-- Replace with your actual AWS Account ID
+  AWS_ACCOUNT_ID: '9042331217972'  # <-- your actual AWS Account ID
 
 steps:
   - checkout: self
@@ -24,22 +24,25 @@ steps:
       npm run build
     displayName: 'Install dependencies and build CDK app'
 
-  # This uses the ADO AWS service connection (aws-dev) to inject credentials
-  # No need to set AWS creds manually if you're using this properly.
+  # Injects AWS credentials into environment variables
   - task: AWSCLI@1
+    name: InjectCreds  # allows referencing outputs like $(InjectCreds.AWS_ACCESS_KEY_ID)
     inputs:
-      awsCredentials: 'aws-dev'  # Ensure this is set up in ADO with proper permissions
+      awsCredentials: 'aws-dev'
       regionName: '$(AWS_REGION)'
       awsCommand: 'sts'
       awsSubCommand: 'get-caller-identity'
-    displayName: 'Verify AWS credentials'
+    displayName: 'Verify and Inject AWS Credentials'
 
   - script: |
       cdk deploy --require-approval never
     displayName: 'Deploy CDK stack'
     env:
+      AWS_ACCESS_KEY_ID: $(InjectCreds.AWS_ACCESS_KEY_ID)
+      AWS_SECRET_ACCESS_KEY: $(InjectCreds.AWS_SECRET_ACCESS_KEY)
+      AWS_SESSION_TOKEN: $(InjectCreds.AWS_SESSION_TOKEN)  # Required for temporary creds
       AWS_REGION: $(AWS_REGION)
-      AWS_ACCOUNT_ID: $(AWS_ACCOUNT_ID)  # Passed to CDK stack’s env block
+      AWS_ACCOUNT_ID: $(AWS_ACCOUNT_ID)
 
 
 
