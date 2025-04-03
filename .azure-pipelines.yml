@@ -1,4 +1,4 @@
-ttrigger:
+trigger:
   branches:
     include:
       - main
@@ -7,8 +7,8 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  AWS_REGION: 'us-east-1'
-  AWS_ACCOUNT_ID: '9042331217972'  # Replace with your real AWS account
+  AWS_REGION: 'us-east-1'                # ✅ Change if you're using a different region
+  AWS_ACCOUNT_ID: '904233121797'         # ✅ Replace with your actual AWS account ID
 
 steps:
   - checkout: self
@@ -24,20 +24,26 @@ steps:
       npm run build
     displayName: 'Install dependencies and build CDK app'
 
-  # Use the AWS service connection to export credentials to env manually
-  - task: Bash@3
-    name: ExportCreds
+  # ✅ Use the service connection to verify it works — and prep env vars
+  - task: AWSCLI@1
+    name: exportCreds
     inputs:
-      targetType: inline
-      script: |
-        echo "##vso[task.setvariable variable=AWS_ACCESS_KEY_ID;issecret=true]$AWS_ACCESS_KEY_ID"
-        echo "##vso[task.setvariable variable=AWS_SECRET_ACCESS_KEY;issecret=true]$AWS_SECRET_ACCESS_KEY"
-        echo "##vso[task.setvariable variable=AWS_SESSION_TOKEN;issecret=true]$AWS_SESSION_TOKEN"
+      awsCredentials: 'aws-dev'           # ✅ Name of your AWS service connection in ADO
+      regionName: '$(AWS_REGION)'
+      awsCommand: 'sts'
+      awsSubCommand: 'get-caller-identity'
+    displayName: 'Verify AWS service connection'
+
+  # ✅ Manually promote the credentials for CDK to use
+  - bash: |
+      echo "##vso[task.setvariable variable=AWS_ACCESS_KEY_ID;issecret=true]$AWS_ACCESS_KEY_ID"
+      echo "##vso[task.setvariable variable=AWS_SECRET_ACCESS_KEY;issecret=true]$AWS_SECRET_ACCESS_KEY"
+      echo "##vso[task.setvariable variable=AWS_SESSION_TOKEN;issecret=true]$AWS_SESSION_TOKEN"
     env:
-      AWS_ACCESS_KEY_ID: $(AWS_DEV_AWS_ACCESS_KEY_ID)
-      AWS_SECRET_ACCESS_KEY: $(AWS_DEV_AWS_SECRET_ACCESS_KEY)
-      AWS_SESSION_TOKEN: $(AWS_DEV_AWS_SESSION_TOKEN)
-    displayName: 'Export AWS Credentials from Service Connection'
+      AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+      AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+      AWS_SESSION_TOKEN: $(AWS_SESSION_TOKEN)
+    displayName: 'Export AWS credentials to environment'
 
   - script: |
       cdk deploy --require-approval never
@@ -48,6 +54,7 @@ steps:
       AWS_SESSION_TOKEN: $(AWS_SESSION_TOKEN)
       AWS_REGION: $(AWS_REGION)
       AWS_ACCOUNT_ID: $(AWS_ACCOUNT_ID)
+
 
 
 
