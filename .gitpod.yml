@@ -1,3 +1,7 @@
+# .gitpod.yml
 tasks:
-  - name: Install CDK
-    init: npm install -g aws-cdk
+  - name: Setup Environment
+    init: |
+      sudo apt update && sudo apt install -y awscli
+      npm install -g aws-cdk
+      npm install
