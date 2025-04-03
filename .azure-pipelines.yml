@@ -1,4 +1,4 @@
-trigger:
+ttrigger:
   branches:
     include:
       - main
@@ -8,7 +8,7 @@ pool:
 
 variables:
   AWS_REGION: 'us-east-1'
-  AWS_ACCOUNT_ID: '9042331217972'  # <-- your actual AWS Account ID
+  AWS_ACCOUNT_ID: '9042331217972'  # Replace with your real AWS account
 
 steps:
   - checkout: self
@@ -24,25 +24,31 @@ steps:
       npm run build
     displayName: 'Install dependencies and build CDK app'
 
-  # Injects AWS credentials into environment variables
-  - task: AWSCLI@1
-    name: InjectCreds  # allows referencing outputs like $(InjectCreds.AWS_ACCESS_KEY_ID)
+  # Use the AWS service connection to export credentials to env manually
+  - task: Bash@3
+    name: ExportCreds
     inputs:
-      awsCredentials: 'aws-dev'
-      regionName: '$(AWS_REGION)'
-      awsCommand: 'sts'
-      awsSubCommand: 'get-caller-identity'
-    displayName: 'Verify and Inject AWS Credentials'
+      targetType: inline
+      script: |
+        echo "##vso[task.setvariable variable=AWS_ACCESS_KEY_ID;issecret=true]$AWS_ACCESS_KEY_ID"
+        echo "##vso[task.setvariable variable=AWS_SECRET_ACCESS_KEY;issecret=true]$AWS_SECRET_ACCESS_KEY"
+        echo "##vso[task.setvariable variable=AWS_SESSION_TOKEN;issecret=true]$AWS_SESSION_TOKEN"
+    env:
+      AWS_ACCESS_KEY_ID: $(AWS_DEV_AWS_ACCESS_KEY_ID)
+      AWS_SECRET_ACCESS_KEY: $(AWS_DEV_AWS_SECRET_ACCESS_KEY)
+      AWS_SESSION_TOKEN: $(AWS_DEV_AWS_SESSION_TOKEN)
+    displayName: 'Export AWS Credentials from Service Connection'
 
   - script: |
       cdk deploy --require-approval never
     displayName: 'Deploy CDK stack'
     env:
-      AWS_ACCESS_KEY_ID: $(InjectCreds.AWS_ACCESS_KEY_ID)
-      AWS_SECRET_ACCESS_KEY: $(InjectCreds.AWS_SECRET_ACCESS_KEY)
-      AWS_SESSION_TOKEN: $(InjectCreds.AWS_SESSION_TOKEN)  # Required for temporary creds
+      AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+      AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+      AWS_SESSION_TOKEN: $(AWS_SESSION_TOKEN)
       AWS_REGION: $(AWS_REGION)
       AWS_ACCOUNT_ID: $(AWS_ACCOUNT_ID)
+
 
 
 
